@@ -34,6 +34,7 @@ for i in range(len(load_frames)):
         plt.ylim([1300, 1600])
     plt.show()
     plt.pause(0.05)
+    #tree = ET.parse(os.fspath(map_fpath))
 
 
 plt.ioff()

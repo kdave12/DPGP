@@ -33,6 +33,7 @@ if dataset == 'ARGO':
     # if reinitialize the mixture model
     with open("data_sample/frame_map_range_0_argo_train4", "rb") as np:
         load_frames = pickle.load(np)
+        #print(load_frames)
     # del load_frames[-1]
 
     a = MixtureModel(load_frames)
@@ -41,7 +42,7 @@ if dataset == 'ARGO':
     # save the initialized mixture model
     with open("data_sample/a_mixture_model_ARGO_train4", "wb") as fb:
         pickle.dump(a, fb)
-
+      
     # # load the saved mixture model
     # with open("data_sample/a_mixture_model_ARGO_train4", "rb") as np:
     #     a = pickle.load(np)

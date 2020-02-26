@@ -31,6 +31,7 @@ def frame_in_pattern_vis(xmin, xmax, ymin, ymax):
         # the on road is much more stable, however the off road ones are quite noisy
             plt.cla()
             frame_temp = load_frames[pattern_idx[i]]
+            
             plt.quiver(frame_temp.x, frame_temp.y, frame_temp.vx, frame_temp.vy)
             plt.xlim([0, 60])
             plt.ylim([1300, 1600])

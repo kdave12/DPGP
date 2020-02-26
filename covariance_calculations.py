@@ -13,10 +13,11 @@ import numpy as np
 import pandas as pd
 from frame import Frame
 import matplotlib
+import matplotlib.pyplot as plt
 from keras.layers import RepeatVector
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
-import tensorflow
+import tensorflow as tf
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import LSTM
 from tensorflow.keras.layers import Dense
@@ -56,7 +57,7 @@ def prepare_covMat_data(file_name1):
 	WX, WY, ux_pos, uy_pos = covariance_matrix_calc(read_data, motion_patterns, xmin, xmax, ymin, ymax)
 
 	stacked_columns = np.column_stack([WX, WY, ux_pos, uy_pos])
-	dataset = pd.DataFrame(stacked_columns, columns=['positionX', 'positionY', 'errorX', 'errorY'])
+	dataset = pd.DataFrame(stacked_columns, columns=['positionX', 'positionY', 'errorX', 'errorY']).values
 
 	data_mean = dataset[:round(TRAIN_SPLIT * len(dataset))].mean(axis=0)
 	data_std = dataset[:round(TRAIN_SPLIT * len(dataset))].std(axis=0)
@@ -102,19 +103,6 @@ def get_minmax(file_name):
 	ymax = int(splits[-1])
 	return xmin, xmax, ymin, ymax
 
-def lstm(X, y, n_steps_in, n_steps_out):
-	
-	n_features = X.shape[2]
-	model = Sequential()
-	model.add(LSTM(200, activation='relu', input_shape=(n_steps_in, n_features)))
-	model.add(RepeatVector(n_steps_out))
-	model.add(LSTM(200, activation='relu', return_sequences=True))
-	model.add(TimeDistributed(Dense(n_features)))
-	model.compile(optimizer='adam', loss='mse')
-	history = model.fit(X, y, epochs=300, verbose=0)
-	return model, history
-
-
 def plot_train_history(history, title):
   loss = history.history['loss']
   val_loss = history.history['val_loss']
@@ -153,7 +141,7 @@ def multivariate_data(dataset, target, start_index, end_index, history_size,
 if __name__ == "__main__":
 	dataset = prepare_covMat_data(file_name1)
 	#norm_matrix = normalize(cov_matrix)
-	print(dataset)
+	print(dataset[:, 0:4])
 
 	#print(cov_matrix)
 
@@ -164,22 +152,23 @@ if __name__ == "__main__":
 	# HYPER PARAMETERS
 	past_history = 5
 	future_target = 2
-	BATCH_SIZE = 50
+	BATCH_SIZE = 40
 	BUFFER_SIZE = 10000
-	EPOCHS = 10
+	EPOCHS = 40
 	EVALUATION_INTERVAL = 200 
 	VALIDATION_STEPS = 50
+	STEP = 1
 
 	# SPLITTING THE DATA SET - TRAINING AND VALIDATION
 	x_train_single, y_train_single = multivariate_data(dataset, dataset[:, 0:4], 0,
                                                    round(TRAIN_SPLIT * len(dataset)), past_history,
                                                    future_target, STEP,
-                                                   single_step=True)
+                                                   single_step=False)
 
 	x_val_single, y_val_single = multivariate_data(dataset, dataset[:, 0:4],
                                                round(TRAIN_SPLIT * len(dataset)), None, past_history,
                                                future_target, STEP,
-                                               single_step=True)
+                                               single_step=False)
 
 
 	# BATCHING AND SHUFFLING
@@ -198,12 +187,9 @@ if __name__ == "__main__":
 	model.add(TimeDistributed(Dense(num_features)))
 	model.compile(optimizer='adam', loss='mse')
 
-	single_step_history = model.fit(train_data_single, epochs=EPOCHS,
+	multi_step_history = model.fit(train_data_single, epochs=EPOCHS,
                                             steps_per_epoch=EVALUATION_INTERVAL,
                                             validation_data=val_data_single,
                                             validation_steps=VALIDATION_STEPS)
 
-	# Training the model
-	trained_model, train_hist = lstm(x_train, y_train, n_steps_in, n_steps_out)
-
-	plot_train_history(train_hist, "Training loss")
+	plot_train_history(multi_step_history, "Training loss")
